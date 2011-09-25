@@ -1,5 +1,6 @@
 QT += network
 QT += opengl
+
 SOURCES += Main.cpp \
     ImageDisplayer.cpp \
     CubeImageDisplay.cpp
