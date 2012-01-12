@@ -1,6 +1,13 @@
+#define GLEW_STATIC
+#include "GL/glew.h"
+#include "shaders.h"
+
 #include "CubeImageDisplay.h"
 #include <QtGui>
 #include <QtDebug>
+
+#include <gl/gl.h>
+#include <gl/glu.h>
 
 CubeImageDisplay::CubeImageDisplay() {
 	QGLFormat myFormat = QGLFormat::defaultFormat();
@@ -12,7 +19,13 @@ CubeImageDisplay::CubeImageDisplay() {
 	angle = 0;
 }
 
+CubeImageDisplay::~CubeImageDisplay() {
+	this->updateTimer->stop();
+	delete(this->updateTimer);
+}
+
 void CubeImageDisplay::initializeGL() {
+	glewInit();
 	glEnable(GL_TEXTURE_2D);
 	glBlendFunc(GL_SRC_ALPHA,GL_ONE);
 	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
@@ -23,15 +36,38 @@ void CubeImageDisplay::initializeGL() {
 	glShadeModel(GL_SMOOTH);
 	glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
 	glGenTextures( 1, &this->displayTexture );
-	this->shader = new QGLShaderProgram(this);
+	/*this->shader = new QGLShaderProgram(this);
 	if(!this->shader->addShaderFromSourceFile(QGLShader::Vertex,"shader.vert")){
 		qDebug() << "Problem adding vertex shader: " << this->shader->log();
 		exit(0);
-	}
-	if(!this->shader->addShaderFromSourceFile(QGLShader::Fragment,"shader.frag")) {
+	}*/
+	/*if(!this->shader->addShaderFromSourceFile(QGLShader::Fragment,"shader.frag")) {
 		qDebug() << "Problem adding fragment shader: " << this->shader->log();
 		exit(0);
-	}
+	}*/
+	/*QGLShader vertShader(QGLShader::Vertex,this);
+	vertShader.compileSourceCode("void main(){ }");
+	this->shader->addShaderFromSourceCode(QGLShader::Vertex, "void main(){ }");*/
+
+	GLuint v = glCreateShader(GL_VERTEX_SHADER);
+	GLuint f = glCreateShader(GL_FRAGMENT_SHADER);
+
+	const char* vv = VERT_SH;
+	const char* ff = FRAG_SH;
+
+	glShaderSource(v, 1, &vv,NULL);
+	glShaderSource(f, 1, &ff,NULL);
+
+
+	glCompileShader(v);
+	glCompileShader(f);
+
+	shaderp = glCreateProgram();
+
+	glAttachShader(shaderp,v);
+	glAttachShader(shaderp,f);
+
+	glLinkProgram(shaderp);
 }
 
 void CubeImageDisplay::setImage(QImage image) {
@@ -133,10 +169,11 @@ void CubeImageDisplay::paintGL() {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glLoadIdentity();
 
-	if(!this->shader->bind()) {
+		/*if(!this->shader->bind()) {
 		qDebug() << this->shader->log();
 		exit(0);
-	}
+		}*/
+	glUseProgram(shaderp);
 
 	glCullFace(GL_BACK);
 	glBegin(GL_QUADS);
@@ -309,8 +346,9 @@ void CubeImageDisplay::paintGL() {
 
 	}
 
+	glDisable(GL_CULL_FACE);
 	glBindTexture( GL_TEXTURE_2D, 0 );
-	glBegin(GL_LINES);
+	glBegin(GL_QUADS);
 	float px;
 	float py;
 	float pz;
@@ -345,8 +383,10 @@ void CubeImageDisplay::paintGL() {
 		z /= 100;
 
 		if( i > 0 ) {
-			glVertex3f(px,py-0.2,pz);
-			glVertex3f(x,y-0.2,z);
+			glVertex3f(px+0.025,py-0.2,pz);
+			glVertex3f(px-0.025,py-0.2,pz);
+			glVertex3f(x-0.025,y-0.2,z);
+			glVertex3f(x+0.025,y-0.2,z);
 		}
 
 		px = x;
@@ -354,5 +394,7 @@ void CubeImageDisplay::paintGL() {
 		pz = z;
 	}
 	glEnd();
+	glEnable(GL_CULL_FACE);
+
 }
 

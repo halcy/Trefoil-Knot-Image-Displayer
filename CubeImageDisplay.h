@@ -10,6 +10,7 @@ Q_OBJECT
 
 public:
     CubeImageDisplay();
+	~CubeImageDisplay();
 	void paintGL();
 	void initializeGL();
 	void setImage(QImage image);
@@ -20,6 +21,7 @@ private:
 	QTimer* updateTimer;
 	float angle;
 	QGLShaderProgram* shader;
+	GLuint shaderp;
 
 private slots:
 	void update();
